@@ -40,3 +40,11 @@ Docker Desktop 4.90 crash-looped on startup: `rename <socket> <socket>.stale: Th
 Volume `mydata`: wrote proof.txt via a `--rm` container (deleted on exit), read `survives` back from two separate fresh containers. Volume outlives any container; contrast Task 1 where `rm` killed the file. This is the storage model for Kafka/Postgres/MinIO.
 
 **Next command to run:** Task 4, Step 1 — `docker network create labnet`
+
+## 2026-09-11 — Task 4 done — WEEKNIGHT BLOCK COMPLETE (Tasks 1–4)
+
+Networks + DNS: on `labnet`, `ping server` resolved to 172.18.0.2, 0% loss. Off the network, `ping: bad address 'server'`. User-defined bridge = DNS by container name. This is why Compose services reach each other as `kafka:9092`, `postgres:5432`.
+
+Docker fundamentals done: image vs container, layers/cache, volumes, networking. Ready for the weekend MQTT project.
+
+**Next command to run:** Task 5, Step 1 — create `mqtt/mosquitto.conf`, then run the broker.
