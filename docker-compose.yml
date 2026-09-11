@@ -178,8 +178,24 @@ services:
       AWS_REGION: us-east-1
     restart: unless-stopped
 
+  # Dremio — SQL query engine + web UI over the Iceberg lakehouse.
+  # Heap/direct memory capped so it coexists with the rest of the stack on 16 GB.
+  dremio:
+    image: dremio/dremio-oss:25.2.0
+    container_name: tl-dremio
+    ports:
+      - "9047:9047"    # web UI
+      - "31010:31010"  # Arrow Flight / JDBC
+    environment:
+      DREMIO_MAX_HEAP_MEMORY_SIZE_MB: "2048"
+      DREMIO_MAX_DIRECT_MEMORY_SIZE_MB: "2048"
+    volumes:
+      - dremio-data:/opt/dremio/data
+    restart: unless-stopped
+
 volumes:
   mqtt-data:
   kafka-data:
   minio-data:
   pg-data:
+  dremio-data:

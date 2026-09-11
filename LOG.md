@@ -85,3 +85,9 @@ Gotchas: never name a script `inspect.py` (shadows stdlib, breaks pydantic impor
 Added Postgres (wal_level=logical, REPLICA IDENTITY FULL) with a seeded `devices` registry, Kafka Connect + Debezium Postgres connector (connect/devices-connector.json), and `registry-sink` landing CDC into coldchain.device_changes. Verified: 3 snapshot events + 1 UPDATE (freezer-02 site-B/Globex/-12 → site-C/Initech/-18) captured with full before/after. Capstone query (sink/capstone.py, DuckDB ASOF JOIN) attributes breaches to the owner at reading time: Initech 17, Acme Foods 7. This is the whole project working end to end. docs/05-cdc.md written.
 
 **Next command to run:** Week 6 — Dremio query UI over the Iceberg catalog (has a web-UI setup step).
+
+## 2026-09-11 — Week 6 (SQL layer) + Phase 1 pipeline COMPLETE
+
+DuckDB (via PyIceberg) is the working SQL engine — capstone ASOF-join breach attribution runs headless. Dremio 25.2 OSS brought up + bootstrapped (scripts/dremio_setup.py: admin user + MinIO S3 source), but OSS gates the Iceberg REST Catalog source ("Iceberg Catalog Source is not supported") and its filesystem S3 reader can't resolve REST-catalog-managed tables (no version-hint.text). Documented honestly in docs/06-dremio.md with the Nessie swap as the real fix. All 6 layers of Phase 1 built, verified, committed, pushed.
+
+**Next:** optional Nessie catalog swap to unlock Dremio; otherwise Phase 2 (homelab hosting).

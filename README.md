@@ -51,25 +51,30 @@ fits in memory.
 | 3 | **MQTT→Kafka bridge** | ✅ done — [docs/03-bridge.md](docs/03-bridge.md) |
 | 4 | **Iceberg** + MinIO + REST catalog | ✅ done — [docs/04-iceberg.md](docs/04-iceberg.md) |
 | 5 | **Debezium** CDC from Postgres | ✅ done — [docs/05-cdc.md](docs/05-cdc.md) |
-| 6 | **Dremio** query layer | 🚧 in progress |
+| 6 | **SQL layer** — DuckDB (works) + Dremio UI | ✅ done — [docs/06-dremio.md](docs/06-dremio.md) |
 
 ## Quickstart
 
 Requires Docker Desktop (WSL2 backend) and Python 3.12+.
 
 ```bash
-# 1. start the broker
-docker compose up -d mosquitto
+# 1. bring up the whole stack
+docker compose up -d
 
-# 2. python deps
+# 2. register the Debezium CDC connector (once)
+curl -X POST -H "Content-Type: application/json"   --data @connect/devices-connector.json http://localhost:8083/connectors
+
+# 3. python deps for the sensor sim
 py -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
 
-# 3. stream cold-chain telemetry
+# 4. stream cold-chain telemetry through the pipeline
 .venv/Scripts/python sim/sensor.py --devices 3 --interval 1
 
-# 4. in another terminal, watch it
-.venv/Scripts/python mqtt/sub.py --topic 'sensors/#'
+# 5. run the capstone: breaches attributed to the owner at the time
+docker run --rm --network telemetry-lakehouse_default   -e CATALOG_URI=http://iceberg-rest:8181 -e S3_ENDPOINT=http://minio:9000   -e AWS_ACCESS_KEY_ID=admin -e AWS_SECRET_ACCESS_KEY=password   -v "$PWD/sink:/app" telemetry-lakehouse-sink python -u capstone.py
 ```
+
+Consoles: MinIO <http://localhost:9001> · Kafka Connect <http://localhost:8083> · Dremio <http://localhost:9047>
 
 ## Layout
 
