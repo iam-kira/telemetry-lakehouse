@@ -71,3 +71,11 @@ Added single-broker KRaft Kafka to compose (dual listeners: kafka:9092 internal,
 Built `bridge/` as a containerized service (paho-mqtt + confluent-kafka): subscribes sensors/# at QoS1, produces to `telemetry` keyed by device_id, acks=all + idempotence. Verified 12 readings from 3 devices flow host-sim → mosquitto → bridge → kafka. Consumer output proved key→partition ordering: each device's seqs grouped and in order within a partition. docs/03-bridge.md written.
 
 **Next command to run:** Week 4 — MinIO + Iceberg REST catalog, land `telemetry` into an Iceberg table, inspect snapshots/time-travel.
+
+## 2026-09-11 — Week 4 done (Iceberg lakehouse)
+
+Added MinIO (S3) + bucket-init + Iceberg REST catalog (apache/iceberg-rest-fixture 1.9.2) + a PyIceberg micro-batching sink (`sink/`). Full pipeline verified end-to-end: 42 readings flowed sensor→mqtt→bridge→kafka→sink→Iceberg on MinIO. 3 snapshots; time travel confirmed (first snapshot=12 rows, current=42). Physical layout in MinIO inspected: metadata.json v0–v3, snap-*.avro manifest lists, *-m0.avro manifests, data/*.parquet. Chose PyIceberg over the Kafka Connect Iceberg sink (lighter, transparent) — noted as swap-in. `sink/query_table.py` inspects schema/snapshots/time-travel. docs/04-iceberg.md written.
+
+Gotchas: never name a script `inspect.py` (shadows stdlib, breaks pydantic import); image tags must be real (iceberg-rest-fixture 1.9.2, not guessed 1.7.1).
+
+**Next command to run:** Week 5 — Postgres registry + Debezium CDC → device history in Iceberg.
