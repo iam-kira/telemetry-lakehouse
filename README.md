@@ -48,8 +48,8 @@ fits in memory.
 |------|-------|-------|
 | 1 | Docker fundamentals + **MQTT** (Mosquitto, sensor sim, QoS) | ✅ done — [docs/01-mqtt.md](docs/01-mqtt.md) |
 | 2 | **Kafka** (KRaft single broker) | ✅ done — [docs/02-kafka.md](docs/02-kafka.md) |
-| 3 | **MQTT→Kafka bridge** | 🚧 in progress |
-| 4 | **Iceberg** + MinIO + REST catalog | ⬜ |
+| 3 | **MQTT→Kafka bridge** | ✅ done — [docs/03-bridge.md](docs/03-bridge.md) |
+| 4 | **Iceberg** + MinIO + REST catalog | 🚧 in progress |
 | 5 | **Debezium** CDC from Postgres | ⬜ |
 | 6 | **Dremio** query layer | ⬜ |
 

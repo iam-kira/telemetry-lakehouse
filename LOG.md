@@ -65,3 +65,9 @@ Smoke test: sim published 6 → observer received 6 with correct JSON. All verif
 Added single-broker KRaft Kafka to compose (dual listeners: kafka:9092 internal, localhost:29092 host). Two config traps hit and fixed: apache/kafka rejects 0.0.0.0 in advertised listeners (use empty host `:9092`); Git Bash mangles `/opt/...` paths (MSYS_NO_PATHCONV=1) and `docker exec` needs `-i` for piped stdin. Verified: created 3-partition topic, produced 3, consumed 3 from beginning. docs/02-kafka.md written.
 
 **Next command to run:** Week 3 — build the MQTT→Kafka bridge container, run sensor sim, consume the `telemetry` topic.
+
+## 2026-09-11 — Week 3 done (MQTT→Kafka bridge)
+
+Built `bridge/` as a containerized service (paho-mqtt + confluent-kafka): subscribes sensors/# at QoS1, produces to `telemetry` keyed by device_id, acks=all + idempotence. Verified 12 readings from 3 devices flow host-sim → mosquitto → bridge → kafka. Consumer output proved key→partition ordering: each device's seqs grouped and in order within a partition. docs/03-bridge.md written.
+
+**Next command to run:** Week 4 — MinIO + Iceberg REST catalog, land `telemetry` into an Iceberg table, inspect snapshots/time-travel.

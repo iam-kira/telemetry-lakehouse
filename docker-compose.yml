@@ -40,6 +40,20 @@ services:
       - kafka-data:/var/lib/kafka/data
     restart: unless-stopped
 
+  # MQTT -> Kafka bridge: subscribes sensors/#, republishes to the `telemetry`
+  # topic keyed by device_id. Reachable services by name on the compose network.
+  bridge:
+    build: ./bridge
+    container_name: tl-bridge
+    depends_on:
+      - mosquitto
+      - kafka
+    environment:
+      MQTT_HOST: mosquitto
+      KAFKA_BOOTSTRAP: kafka:9092
+      KAFKA_TOPIC: telemetry
+    restart: unless-stopped
+
 volumes:
   mqtt-data:
   kafka-data:
