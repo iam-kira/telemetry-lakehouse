@@ -1,0 +1,17 @@
+# telemetry-lakehouse — Phase 1 stack. Brought up one layer at a time.
+# Every service shares the default compose network and is reachable by service name.
+name: telemetry-lakehouse
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: tl-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt-data:/mosquitto/data
+    restart: unless-stopped
+
+volumes:
+  mqtt-data:

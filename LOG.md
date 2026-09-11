@@ -48,3 +48,14 @@ Networks + DNS: on `labnet`, `ping server` resolved to 172.18.0.2, 0% loss. Off 
 Docker fundamentals done: image vs container, layers/cache, volumes, networking. Ready for the weekend MQTT project.
 
 **Next command to run:** Task 5, Step 1 — create `mqtt/mosquitto.conf`, then run the broker.
+
+## 2026-09-11 — Week 1 COMPLETE (weekend MQTT project executed)
+
+Built the real MQTT layer instead of the toy pub/sub: `docker-compose.yml` (Mosquitto 2.0.22, persistence on), `sim/sensor.py` (cold-chain simulator: N freezers, random-walk temp, door-open warming events, QoS-configurable), `mqtt/sub.py` (observer with optional persistent session).
+
+**Prediction (written before running):** persistent subscriber offline → QoS1 messages delivered on reconnect, QoS0 lost.
+**Actual:** exactly that. QoS1: session_present=True, 5/5 received. QoS0: session_present=True, 0/5 received. Broker persistence + clean_session=False is what makes at-least-once survive a disconnect.
+
+Smoke test: sim published 6 → observer received 6 with correct JSON. All verified.
+
+**Next command to run:** Week 2 — add Kafka (KRaft, single broker) to compose, create a topic, produce/consume.
