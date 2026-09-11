@@ -79,3 +79,9 @@ Added MinIO (S3) + bucket-init + Iceberg REST catalog (apache/iceberg-rest-fixtu
 Gotchas: never name a script `inspect.py` (shadows stdlib, breaks pydantic import); image tags must be real (iceberg-rest-fixture 1.9.2, not guessed 1.7.1).
 
 **Next command to run:** Week 5 — Postgres registry + Debezium CDC → device history in Iceberg.
+
+## 2026-09-11 — Week 5 done (Debezium CDC + capstone query)
+
+Added Postgres (wal_level=logical, REPLICA IDENTITY FULL) with a seeded `devices` registry, Kafka Connect + Debezium Postgres connector (connect/devices-connector.json), and `registry-sink` landing CDC into coldchain.device_changes. Verified: 3 snapshot events + 1 UPDATE (freezer-02 site-B/Globex/-12 → site-C/Initech/-18) captured with full before/after. Capstone query (sink/capstone.py, DuckDB ASOF JOIN) attributes breaches to the owner at reading time: Initech 17, Acme Foods 7. This is the whole project working end to end. docs/05-cdc.md written.
+
+**Next command to run:** Week 6 — Dremio query UI over the Iceberg catalog (has a web-UI setup step).

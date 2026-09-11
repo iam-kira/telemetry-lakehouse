@@ -120,7 +120,66 @@ services:
       FLUSH_SECONDS: "5"
     restart: unless-stopped
 
+  # Device registry. wal_level=logical lets Debezium read the write-ahead log.
+  postgres:
+    image: postgres:16
+    container_name: tl-postgres
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: registry
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Kafka Connect running Debezium — reads the Postgres WAL and emits a CDC event
+  # to Kafka for every insert/update/delete on the registry.
+  connect:
+    image: debezium/connect:3.0.0.Final
+    container_name: tl-connect
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: cdc
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    restart: unless-stopped
+
+  # CDC -> Iceberg: lands every registry change into coldchain.device_changes.
+  registry-sink:
+    build: ./sink
+    image: telemetry-lakehouse-sink
+    container_name: tl-registry-sink
+    command: ["python", "-u", "registry_sink.py"]
+    depends_on:
+      - kafka
+      - iceberg-rest
+      - connect
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      CDC_TOPIC: cdc.public.devices
+      CATALOG_URI: http://iceberg-rest:8181
+      S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: password
+      AWS_REGION: us-east-1
+    restart: unless-stopped
+
 volumes:
   mqtt-data:
   kafka-data:
   minio-data:
+  pg-data:

@@ -50,8 +50,8 @@ fits in memory.
 | 2 | **Kafka** (KRaft single broker) | ✅ done — [docs/02-kafka.md](docs/02-kafka.md) |
 | 3 | **MQTT→Kafka bridge** | ✅ done — [docs/03-bridge.md](docs/03-bridge.md) |
 | 4 | **Iceberg** + MinIO + REST catalog | ✅ done — [docs/04-iceberg.md](docs/04-iceberg.md) |
-| 5 | **Debezium** CDC from Postgres | 🚧 in progress |
-| 6 | **Dremio** query layer | ⬜ |
+| 5 | **Debezium** CDC from Postgres | ✅ done — [docs/05-cdc.md](docs/05-cdc.md) |
+| 6 | **Dremio** query layer | 🚧 in progress |
 
 ## Quickstart
 
