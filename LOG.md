@@ -59,3 +59,9 @@ Built the real MQTT layer instead of the toy pub/sub: `docker-compose.yml` (Mosq
 Smoke test: sim published 6 → observer received 6 with correct JSON. All verified.
 
 **Next command to run:** Week 2 — add Kafka (KRaft, single broker) to compose, create a topic, produce/consume.
+
+## 2026-09-11 — Week 2 done (Kafka)
+
+Added single-broker KRaft Kafka to compose (dual listeners: kafka:9092 internal, localhost:29092 host). Two config traps hit and fixed: apache/kafka rejects 0.0.0.0 in advertised listeners (use empty host `:9092`); Git Bash mangles `/opt/...` paths (MSYS_NO_PATHCONV=1) and `docker exec` needs `-i` for piped stdin. Verified: created 3-partition topic, produced 3, consumed 3 from beginning. docs/02-kafka.md written.
+
+**Next command to run:** Week 3 — build the MQTT→Kafka bridge container, run sensor sim, consume the `telemetry` topic.
