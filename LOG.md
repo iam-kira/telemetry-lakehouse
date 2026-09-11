@@ -27,3 +27,10 @@ Docker Desktop 4.90 crash-looped on startup: `rename <socket> <socket>.stale: Th
 **Task 0 done** — `docker run --rm hello-world` prints the greeting.
 
 **Next command to run:** Task 1, Step 1 — `docker run -it --name box1 ubuntu:24.04 bash`
+
+## 2026-09-11 — Tasks 1 & 2 done
+
+- **Task 1** (image vs container): file in a container's writable layer survived stop→start but died on `docker rm`. Bonus lesson: `docker` is not available *inside* a container — proved isolation by accident.
+- **Task 2** (layers + cache): first build 21.0s, rebuild after editing app.txt 3.6s. Two `RUN` layers `CACHED`, only `COPY` re-ran. `docker history` timestamps show reused vs rebuilt layers; `<missing>` = unnamed intermediate layers, not an error.
+
+**Next command to run:** Task 3, Step 1 — `docker volume create mydata`
