@@ -34,3 +34,9 @@ Docker Desktop 4.90 crash-looped on startup: `rename <socket> <socket>.stale: Th
 - **Task 2** (layers + cache): first build 21.0s, rebuild after editing app.txt 3.6s. Two `RUN` layers `CACHED`, only `COPY` re-ran. `docker history` timestamps show reused vs rebuilt layers; `<missing>` = unnamed intermediate layers, not an error.
 
 **Next command to run:** Task 3, Step 1 — `docker volume create mydata`
+
+## 2026-09-11 — Task 3 done
+
+Volume `mydata`: wrote proof.txt via a `--rm` container (deleted on exit), read `survives` back from two separate fresh containers. Volume outlives any container; contrast Task 1 where `rm` killed the file. This is the storage model for Kafka/Postgres/MinIO.
+
+**Next command to run:** Task 4, Step 1 — `docker network create labnet`
