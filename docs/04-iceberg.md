@@ -79,3 +79,27 @@ The sink flushes on **50 rows OR 5 seconds**, whichever comes first — so one s
 above holds 29 rows, another just 1 (the timer caught a lull). Appending per-message
 instead would spray thousands of tiny Parquet files and wreck read performance; this
 is the single most common lakehouse mistake, avoided on purpose.
+
+## Persist the catalog, not just the data (a bug we hit)
+
+The first build ran the REST catalog with its **default in-memory** backend. Data
+files lived safely in MinIO, but on the first full restart the catalog came up blank:
+`coldchain.telemetry` reported **0 rows**, every data file orphaned. The lesson: an
+Iceberg lakehouse has *two* durable things — the data files **and** the catalog that
+names the current metadata pointer. Lose the catalog and the data is unreachable.
+
+Fix: give the JDBC catalog a real database on a volume.
+
+```yaml
+iceberg-rest:
+  user: root                                    # write the file on the mounted volume
+  environment:
+    CATALOG_URI: jdbc:sqlite:/persist/catalog.db  # not the default in-memory sqlite
+  volumes:
+    - iceberg-catalog:/persist
+```
+
+Recovery was painless because Kafka still had the telemetry (7-day retention): reset
+the sink's consumer group to earliest and it **replayed the log** back into the fresh
+persistent catalog — 122 rows restored, no data generated. That replayability is
+exactly why the durable log sits in the middle of the pipeline.

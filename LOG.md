@@ -91,3 +91,11 @@ Added Postgres (wal_level=logical, REPLICA IDENTITY FULL) with a seeded `devices
 DuckDB (via PyIceberg) is the working SQL engine — capstone ASOF-join breach attribution runs headless. Dremio 25.2 OSS brought up + bootstrapped (scripts/dremio_setup.py: admin user + MinIO S3 source), but OSS gates the Iceberg REST Catalog source ("Iceberg Catalog Source is not supported") and its filesystem S3 reader can't resolve REST-catalog-managed tables (no version-hint.text). Documented honestly in docs/06-dremio.md with the Nessie swap as the real fix. All 6 layers of Phase 1 built, verified, committed, pushed.
 
 **Next:** optional Nessie catalog swap to unlock Dremio; otherwise Phase 2 (homelab hosting).
+
+## 2026-09-13 — Fixed catalog durability bug (found on restart)
+
+After a machine restart the stack came back but coldchain.telemetry showed 0 rows: the apache/iceberg-rest-fixture ran its DEFAULT in-memory catalog, so it forgot every table while data files sat orphaned in MinIO. Fix: CATALOG_URI=jdbc:sqlite:/persist/catalog.db on a volume (iceberg-catalog), user: root so it can write. Recovered by wiping orphaned MinIO data + resetting sink consumer groups to earliest → replayed Kafka's retained log (122 telemetry + 4 CDC) into the persistent catalog. Verified: restart iceberg-rest → 122 rows survive. docs/04-iceberg.md updated with the lesson.
+
+Also: user's PowerShell is 5.1 — `&&` is a parse error; give `cmd1; if ($?) { cmd2 }` or one-per-line.
+
+**Next command to run:** (stack is durable now) `docker compose up -d` after any restart — no data loss.

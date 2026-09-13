@@ -82,6 +82,10 @@ services:
       echo 'bucket ready'; "
 
   # Iceberg REST catalog — tracks table metadata; points data at MinIO.
+  # CATALOG_URI puts the JDBC catalog on a SQLite file on a volume, so the catalog
+  # (which tables exist + their current metadata pointer) survives a restart. The
+  # image default is in-memory SQLite, which forgets every table on restart while the
+  # data files sit orphaned in MinIO — persist the catalog, not just the data.
   iceberg-rest:
     image: apache/iceberg-rest-fixture:1.9.2
     container_name: tl-iceberg-rest
@@ -89,7 +93,9 @@ services:
       - "8181:8181"
     depends_on:
       - minio
+    user: root   # so it can write the SQLite catalog file on the mounted volume
     environment:
+      CATALOG_URI: jdbc:sqlite:/persist/catalog.db
       CATALOG_WAREHOUSE: s3://warehouse/
       CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
       CATALOG_S3_ENDPOINT: http://minio:9000
@@ -97,6 +103,8 @@ services:
       AWS_ACCESS_KEY_ID: admin
       AWS_SECRET_ACCESS_KEY: password
       AWS_REGION: us-east-1
+    volumes:
+      - iceberg-catalog:/persist
     restart: unless-stopped
 
   # Kafka -> Iceberg sink (PyIceberg micro-batching). Writes data files straight
@@ -199,3 +207,4 @@ volumes:
   minio-data:
   pg-data:
   dremio-data:
+  iceberg-catalog:
