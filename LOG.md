@@ -99,3 +99,9 @@ After a machine restart the stack came back but coldchain.telemetry showed 0 row
 Also: user's PowerShell is 5.1 — `&&` is a parse error; give `cmd1; if ($?) { cmd2 }` or one-per-line.
 
 **Next command to run:** (stack is durable now) `docker compose up -d` after any restart — no data loss.
+
+## 2026-09-13 — Dremio/Nessie attempt → hardware wall; Dremio made opt-in
+
+Tried to unlock Dremio querying the lakehouse. Bumped Dremio 25.2→26.0.5 to test OSS Iceberg-REST support; it needed ~4GB and OOM'd the Docker VM (host free mem hit ~1.6GB), daemon went unresponsive. Force-kill → stale-socket crash loop (sailor-ingest + secrets-engine ghost sockets) → recovered by stopping the com.docker.service + renaming both socket dirs aside + single clean relaunch. Reverted Dremio to 25.2 and put it behind a compose `profiles: ["ui"]` so it never auto-starts and traps the box again. Verdict: the full stack + Dremio doesn't fit this 16GB machine — a Phase-2 hardware concern. Durability held: coldchain namespace + 122 rows survived the whole crash/restart cycle (persistent catalog earning its keep). Pipeline back up (9 services), CDC connector persisted/RUNNING, fresh readings flow to Iceberg (128 rows).
+
+**Next command to run:** `docker compose up -d` (pipeline, no Dremio). Nessie swap deferred — needs more RAM to run Dremio anyway.

@@ -187,10 +187,15 @@ services:
     restart: unless-stopped
 
   # Dremio — SQL query engine + web UI over the Iceberg lakehouse.
-  # Heap/direct memory capped so it coexists with the rest of the stack on 16 GB.
+  # Behind the "ui" profile so it does NOT auto-start: on a 16 GB box it competes
+  # for RAM with Kafka/Connect and can thrash the Docker VM. Start it deliberately
+  # (and ideally stop `connect` first) with:  docker compose --profile ui up -d dremio
+  # Note: Dremio OSS can't query REST-catalog-managed Iceberg tables anyway — DuckDB
+  # (sink/capstone.py) is the working SQL layer. See docs/06-dremio.md.
   dremio:
     image: dremio/dremio-oss:25.2.0
     container_name: tl-dremio
+    profiles: ["ui"]
     ports:
       - "9047:9047"    # web UI
       - "31010:31010"  # Arrow Flight / JDBC
