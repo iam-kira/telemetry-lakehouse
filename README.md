@@ -53,6 +53,21 @@ fits in memory.
 | 5 | **Debezium** CDC from Postgres | ✅ done — [docs/05-cdc.md](docs/05-cdc.md) |
 | 6 | **SQL layer** — DuckDB (works) + Dremio UI | ✅ done — [docs/06-dremio.md](docs/06-dremio.md) |
 
+## Roadmap
+
+Phase 1 above is complete and durable. The next layers build on the *same* pipeline
+rather than starting new projects — one system, taken deep:
+
+- **Stream processing — Apache Flink** *(in progress, `week-flink` branch)*: event-time
+  windows, keyed state + timers, exactly-once alerts to Kafka, kill/restart recovery drills.
+- **Predictive ML**: anomaly / breach-prediction on the freezer stream, trained on Iceberg
+  history and scored live.
+- **Observability — Elasticsearch + Kibana**: ship pipeline logs, dashboards, log search.
+- **Alerts API — FastAPI + MongoDB**: serve alerts with idempotent replay and indexed queries.
+- **Deploy**: containers → Kubernetes (Helm) on a self-hosted homelab.
+
+`LOG.md` is the running record and resume-from-cold pointer.
+
 ## Quickstart
 
 Requires Docker Desktop (WSL2 backend) and Python 3.12+.
