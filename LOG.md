@@ -125,3 +125,9 @@ Branch `week-flink` created. Built `telemetry-lakehouse-flink` (1.42 GB) and `te
 **Next command to run (Task 1, learner types):** switch to flink mode —
 `docker stop tl-minio tl-iceberg-rest tl-sink tl-postgres tl-connect tl-registry-sink` then
 `docker compose --profile flink up -d mosquitto bridge flink-jobmanager flink-taskmanager` — confirm http://localhost:8081 shows 1 TaskManager / 2 slots, then write `flink/sql/init.sql` by hand.
+
+## 2026-09-26 — Task 1: init.sql added; telemetry has 3 partitions (P2 idle)
+
+`flink/sql/init.sql` created — given DDL: event-time `telemetry` table over Kafka with a 5 s watermark. `telemetry` PartitionCount=3; end offsets `0:163 1:328 2:0` → **partition 2 is idle** (3 devices hashed onto P0/P1). That's the Task-2 hook: watermark = min across partitions, so an idle partition stalls windows. Cluster up (flink 7 h; kafka/bridge/mosquitto 38 h).
+
+**Learner's remaining Task-1 beat (not done for you):** run the streaming SELECT, watch rows scroll, and explain in one sentence what the watermark line promises.
