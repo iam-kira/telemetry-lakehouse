@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .env
 mqtt/data/
+flink/job/target/
+
+# private working notes — job-application prep, not a project artifact. Keep local only.
+docs/plans/2026-09-15-dtici-flink-kafka-elk.md

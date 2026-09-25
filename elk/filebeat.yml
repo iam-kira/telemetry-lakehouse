@@ -1,0 +1,16 @@
+# Tail every container's stdout/stderr (Docker's json-file logs) and ship it to
+# Elasticsearch. add_docker_metadata turns the container-ID in the path into
+# container.name — the field the Kibana dashboard splits by.
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - container: ~
+
+processors:
+  - add_docker_metadata: ~
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]

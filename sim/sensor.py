@@ -64,7 +64,7 @@ def run(args: argparse.Namespace) -> None:
                 temps[d] += (target - temps[d]) * 0.3
                 warming[d] = max(0, warming[d] - 1)
 
-                device_id = f"freezer-{d:02d}"
+                device_id = f"freezer-{d + args.offset:02d}"
                 payload = {
                     "device_id": device_id,
                     "ts": time.time(),
@@ -97,6 +97,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--host", default="localhost")
     p.add_argument("--port", type=int, default=1883)
     p.add_argument("--devices", type=int, default=3, help="number of freezer devices")
+    p.add_argument("--offset", type=int, default=0,
+                   help="first device number, so a second sim can run a disjoint fleet")
     p.add_argument("--interval", type=float, default=1.0, help="seconds between reading rounds")
     p.add_argument("--count", type=int, default=0, help="total messages to send (0 = forever)")
     p.add_argument("--qos", type=int, default=1, choices=[0, 1, 2])

@@ -105,3 +105,29 @@ Also: user's PowerShell is 5.1 — `&&` is a parse error; give `cmd1; if ($?) { 
 Tried to unlock Dremio querying the lakehouse. Bumped Dremio 25.2→26.0.5 to test OSS Iceberg-REST support; it needed ~4GB and OOM'd the Docker VM (host free mem hit ~1.6GB), daemon went unresponsive. Force-kill → stale-socket crash loop (sailor-ingest + secrets-engine ghost sockets) → recovered by stopping the com.docker.service + renaming both socket dirs aside + single clean relaunch. Reverted Dremio to 25.2 and put it behind a compose `profiles: ["ui"]` so it never auto-starts and traps the box again. Verdict: the full stack + Dremio doesn't fit this 16GB machine — a Phase-2 hardware concern. Durability held: coldchain namespace + 122 rows survived the whole crash/restart cycle (persistent catalog earning its keep). Pipeline back up (9 services), CDC connector persisted/RUNNING, fresh readings flow to Iceberg (128 rows).
 
 **Next command to run:** `docker compose up -d` (pipeline, no Dremio). Nessie swap deferred — needs more RAM to run Dremio anyway.
+
+## 2026-09-15 — DTICI hands-on prep: Flink + drills + Elastic scaffolding
+
+Plan written: `docs/plans/2026-09-15-dtici-flink-kafka-elk.md` (Sep 15–28; application deadline Oct 5). Scaffolding only, no lesson code: `flink/Dockerfile` (flink 1.20.5-java17 + Kafka SQL connector 3.4.0-1.20), `flink/job/pom.xml`, compose profiles `flink` (JM + TM) and `elk` (ES/Kibana/Filebeat 8.19.21), `elk/filebeat.yml`, and `sim/sensor.py --offset N` for a second fleet you can stop on its own. All versions checked against Docker Hub / Maven Central today. RAM rule: flink and elk modes each stop the lakehouse tier, and never run both at once. Nothing built or run yet (Docker Desktop was down).
+
+**Next command to run:** start Docker Desktop, then Task 0 — `docker compose --profile flink build flink-jobmanager`
+
+## 2026-09-16 — Prep updated for the revised JD plan: API + MongoDB added
+
+Read the actual JD (Oracle posting 10089). Updated the hands-on plan for the revised week 2: Elastic moves to Sat Sep 26 morning (3–4 h is over a weeknight), and the new **Task 9** (Sat pm–Sun) is an alerts REST API + MongoDB. It covers three JD lines in one service: APIs/microservices; NoSQL modeling, indexing and query optimization (explain() runs, ESR rule); and error handling/replay (dead-letter collection, idempotent replay). CDC drill renumbered to Task 10. Flink alerts are now JSON so Mongo can store them. Task 8 gained an ES search step (analyzers, match vs term). Scaffolding only: `api/Dockerfile`, `api/requirements.txt`, `api/seed_alerts.py`, compose profile `api` (mongo 8.0.32 + alerts-api). Versions checked against PyPI/Docker Hub today. Still nothing built or run — Docker Desktop is down, Task 0 not started.
+
+**Next command to run:** start Docker Desktop, then Task 0 — `docker compose --profile flink build flink-jobmanager`
+
+## 2026-09-18 — Task 0 done (box ready), on branch week-flink
+
+Branch `week-flink` created. Built `telemetry-lakehouse-flink` (1.42 GB) and `telemetry-lakehouse-alerts-api` (271 MB); pre-pulled maven 3.9-temurin-17, elasticsearch/kibana/filebeat 8.19.21, mongo 8.0.32. All 7 Task-0 images verified present, no errors. Docker engine 29.7.2, healthy — no crash recovery needed. Concepts (Day 1–2) are the learner's to do: the 4 Flink docs + the 9 spoken-checkpoint questions.
+
+**Next command to run (Task 1, learner types):** switch to flink mode —
+`docker stop tl-minio tl-iceberg-rest tl-sink tl-postgres tl-connect tl-registry-sink` then
+`docker compose --profile flink up -d mosquitto bridge flink-jobmanager flink-taskmanager` — confirm http://localhost:8081 shows 1 TaskManager / 2 slots, then write `flink/sql/init.sql` by hand.
+
+## 2026-09-26 — Task 1: init.sql added; telemetry has 3 partitions (P2 idle)
+
+`flink/sql/init.sql` created — given DDL: event-time `telemetry` table over Kafka with a 5 s watermark. `telemetry` PartitionCount=3; end offsets `0:163 1:328 2:0` → **partition 2 is idle** (3 devices hashed onto P0/P1). That's the Task-2 hook: watermark = min across partitions, so an idle partition stalls windows. Cluster up (flink 7 h; kafka/bridge/mosquitto 38 h).
+
+**Learner's remaining Task-1 beat (not done for you):** run the streaming SELECT, watch rows scroll, and explain in one sentence what the watermark line promises.

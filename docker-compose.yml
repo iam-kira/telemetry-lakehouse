@@ -206,6 +206,122 @@ services:
       - dremio-data:/opt/dremio/data
     restart: unless-stopped
 
+  # Flink session cluster: JobManager (schedules jobs, coordinates checkpoints) + one
+  # TaskManager (runs tasks, 2 slots). Behind the "flink" profile — ~2.8 GB together, so
+  # stop the lakehouse tier first (docs/plans/2026-09-15-dtici-flink-kafka-elk.md).
+  # No restart policy on purpose: the failure drills kill the TaskManager and you bring
+  # it back by hand. Checkpoints live on a volume both processes mount.
+  flink-jobmanager:
+    build: ./flink
+    image: telemetry-lakehouse-flink
+    container_name: tl-flink-jobmanager
+    profiles: ["flink"]
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"   # web UI + REST API
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1024m
+        state.checkpoints.dir: file:///opt/flink/state/checkpoints
+        state.savepoints.dir: file:///opt/flink/state/savepoints
+    volumes:
+      - flink-state:/opt/flink/state
+      - ./flink/job/target:/opt/flink/jobs:ro   # built job jars
+      - ./flink/sql:/opt/flink/sql:ro           # SQL client init scripts
+
+  flink-taskmanager:
+    build: ./flink
+    image: telemetry-lakehouse-flink
+    container_name: tl-flink-taskmanager
+    profiles: ["flink"]
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        taskmanager.memory.process.size: 1728m
+        state.checkpoints.dir: file:///opt/flink/state/checkpoints
+        state.savepoints.dir: file:///opt/flink/state/savepoints
+    volumes:
+      - flink-state:/opt/flink/state
+
+  # Elastic stack: Filebeat tails every container's log file, Elasticsearch indexes it,
+  # Kibana dashboards it. Behind the "elk" profile (~2.5 GB) — run it with Flink stopped.
+  # Security is OFF and Filebeat mounts the Docker socket: local lab only.
+  elasticsearch:
+    image: elasticsearch:8.19.21
+    container_name: tl-elasticsearch
+    profiles: ["elk"]
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: kibana:8.19.21
+    container_name: tl-kibana
+    profiles: ["elk"]
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+
+  filebeat:
+    image: elastic/filebeat:8.19.21
+    container_name: tl-filebeat
+    profiles: ["elk"]
+    depends_on:
+      - elasticsearch
+    user: root   # to read other containers' log files
+    # --strict.perms=false: Windows bind mounts look world-writable and Filebeat refuses them
+    command: ["-environment", "container", "--strict.perms=false"]
+    volumes:
+      - ./elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # container.name lookup
+
+  # Alerts API (FastAPI) + MongoDB: consumes Flink's `alerts` topic into a document store
+  # and serves it over REST. Behind the "api" profile; run it alongside "flink" (~0.5 GB).
+  # No restart policy: while main.py is half-written the API will crash, and that's fine.
+  mongo:
+    image: mongo:8.0.32
+    container_name: tl-mongo
+    profiles: ["api"]
+    # WiredTiger's cache defaults to about half the VM's RAM; cap it on a 16 GB box
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  alerts-api:
+    build: ./api
+    container_name: tl-alerts-api
+    profiles: ["api"]
+    depends_on:
+      - kafka
+      - mongo
+    ports:
+      - "8000:8000"   # Swagger UI at http://localhost:8000/docs
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      ALERTS_TOPIC: alerts
+      MONGO_URI: mongodb://mongo:27017
+      FLINK_REST: http://flink-jobmanager:8081
+    volumes:
+      - ./api:/app   # edit on the host; uvicorn reloads inside the container
+
 volumes:
   mqtt-data:
   kafka-data:
@@ -213,3 +329,6 @@ volumes:
   pg-data:
   dremio-data:
   iceberg-catalog:
+  flink-state:
+  es-data:
+  mongo-data:
